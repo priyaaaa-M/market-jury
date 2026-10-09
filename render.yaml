@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: market-jury
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeployTrigger: off
+    healthCheckPath: /health
+    envVars:
+      - key: API_KEY
+        generateValue: true
+      - key: MARKET_DATA_MODE
+        value: yahoo
+      - key: AGENT_AUTO_EXECUTE
+        value: "false"
+      - key: AGENT_FORCE_ACTIVE
+        value: "false"
+      - key: PUBLIC_SCOREBOARD
+        value: "false"
+      - key: DB_PATH
+        value: /tmp/market-jury.db

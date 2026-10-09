@@ -32,3 +32,10 @@ See [setup and MCP instructions](docs/setup.md) for Windows/manual setup, option
 
 ## CI
 A GitHub Actions workflow is in `docs/ci.yml.example`. Copy it to `.github/workflows/ci.yml` to enable lint, tests and the web build.
+
+## Deploy your own private research dashboard on Render
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
+Open this README on GitHub and click the button. Render detects this repository from the page referrer. Review the blueprint: one **Free** web service, then click Deploy. After build succeeds, open the service URL. In Render service > Environment, copy your generated `API_KEY` locally and enter it in the app. Do not paste the key in chat or commit it. Authentication stays on; no LLM keys are included. The frontend and `/api` share one production container and origin.
+
+Free deployment limitations: sleeps when idle, cold starts, ephemeral database (journals/scoreboard/history can be lost on restart/redeploy), limited compute, public market data availability not guaranteed. Do not use it as durable storage or trade execution. Auto-deploy is off. To add provider keys later, add server environment variables in Render, never client `VITE_*` variables or repository files. Twelve Data NSE access still needs entitlement verification; optional LLM calls can cost money and require your provider choice. This button is not an already-live hosted service.

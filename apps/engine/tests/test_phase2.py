@@ -128,3 +128,17 @@ def test_independent_crosscheck_requires_comparable_fresh_evidence():
     secondary['comparison_price_type']='adjusted_daily_close'
     secondary['provider']='yahoo_delayed'
     assert compare(primary,secondary)['reason']=='not_independent'
+
+
+def test_production_requires_key_and_serves_auth_api(tmp_path,monkeypatch):
+    from engine.production import production_app
+    (tmp_path/'assets').mkdir();(tmp_path/'index.html').write_text('<h1>market-jury test</h1>')
+    monkeypatch.setenv('WEB_DIST',str(tmp_path));monkeypatch.setenv('DB_PATH',str(tmp_path/'test.db'))
+    monkeypatch.delenv('API_KEY',raising=False)
+    with pytest.raises(RuntimeError):production_app()
+    monkeypatch.setenv('API_KEY','test-only-long-key-1234567890123')
+    monkeypatch.setenv('MARKET_DATA_MODE','simulated')
+    c=TestClient(production_app())
+    assert c.get('/').status_code==200 and c.get('/debates').status_code==200
+    assert c.get('/api/status').status_code==401
+    assert c.get('/api/status',headers={'X-API-Key':'test-only-long-key-1234567890123'}).status_code==200

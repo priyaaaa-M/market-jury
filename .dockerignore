@@ -1,0 +1,10 @@
+.git
+**/node_modules
+**/dist
+**/__pycache__
+**/*.db
+.env
+.env.*
+**/.venv
+**/.pytest_cache
+**/*.tsbuildinfo
