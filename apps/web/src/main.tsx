@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./index.css";
 
+document.documentElement.dataset.theme = localStorage.getItem("theme") === "dark" ? "dark" : "light";
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 15_000, retry: 1 } } });
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode><QueryClientProvider client={qc}><BrowserRouter><App /></BrowserRouter></QueryClientProvider></React.StrictMode>,

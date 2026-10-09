@@ -2,8 +2,15 @@ const BASE = import.meta.env.VITE_API_URL || "/api";
 const KEY_NAME = "engine_api_key";
 
 export const getKey = () => localStorage.getItem(KEY_NAME) || "";
-export const setKey = (k: string) => localStorage.setItem(KEY_NAME, k);
+export const setKey = (k: string) => localStorage.setItem(KEY_NAME, k.trim());
 
+export function clearKey() { localStorage.removeItem(KEY_NAME); }
+export async function validateKey(key: string) {
+  const res = await fetch(`${BASE}/status`, {headers: {"X-API-Key": key.trim()}, signal: AbortSignal.timeout(90000)});
+  if (res.status === 401) throw new Error("Invalid engine key. Copy API_KEY from your Render service's Environment tab, not the rnd_ management key.");
+  if (!res.ok) throw new Error(`Engine returned ${res.status}. Try again shortly.`);
+  return res.json();
+}
 export async function api<T = any>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
-import { getKey, setKey } from "./lib/api";
+import { getKey, setKey, clearKey, validateKey } from "./lib/api";
 import { useLive } from "./lib/useLive";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "./lib/api";
@@ -20,13 +20,22 @@ const NAV = [["/", "Overview"], ["/portfolio", "Portfolio"], ["/debates", "Debat
 
 function KeyGate({ onSet }: { onSet: () => void }) {
   const [v, setV] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const connect = async () => {
+    setError(""); setBusy(true);
+    try { await validateKey(v); setKey(v); onSet(); }
+    catch (e) { setError(e instanceof Error ? e.message : "Could not connect to engine"); }
+    finally { setBusy(false); }
+  };
   return (
     <div className="mx-auto mt-24 max-w-sm space-y-3 p-4">
       <h1 className="text-xl font-semibold">Enter engine API key</h1>
-      <p className="text-sm text-neutral-600">Printed in the engine log at startup, or set via API_KEY.</p>
+      <p className="text-sm text-neutral-600">Render: market-jury service → Environment → copy API_KEY. This is not your Render management key or LLM key. The first connection may take a minute on the free plan.</p>
       <label htmlFor="api-key" className="block text-sm">Engine API key</label>
       <input id="api-key" className="w-full rounded bg-neutral-100 p-2" value={v} onChange={(e) => setV(e.target.value)} type="password" />
-      <button className="rounded bg-neutral-200 px-4 py-2" onClick={() => { setKey(v); onSet(); }}>Connect</button>
+      <button disabled={busy || !v.trim()} className="rounded bg-neutral-200 px-4 py-2 disabled:opacity-40" onClick={connect}>{busy ? "Checking connection…" : "Connect"}</button>
+      {error && <p role="alert" className="text-sm">{error}</p>}
     </div>
   );
 }
@@ -40,11 +49,12 @@ export default function App() {
 function Shell() {
   const { connected } = useLive();
   const status = useQuery({ queryKey: ["status"], queryFn: () => api("/status") });
+  if (status.isError && String(status.error).includes("Invalid API key")) return <KeyGate onSet={() => location.reload()} />;
   return (
     <div className="min-h-screen">
       <a className="skip-link" href="#main">Skip to content</a>
       <header className="flex flex-wrap items-center gap-4 border-b border-neutral-200 px-4 py-2">
-        <b>market-jury</b>
+        <b>market-jury</b>{localStorage.getItem("display_name") && <span className="text-sm">{localStorage.getItem("display_name")}</span>}
         <nav aria-label="Main navigation" className="flex flex-wrap gap-3 text-sm">
           {NAV.map(([to, l]) => (
             <NavLink key={to} to={to} end className={({ isActive }) => (isActive ? "text-black underline underline-offset-4 font-semibold" : "text-neutral-700 hover:text-black")}>{l}</NavLink>
@@ -59,7 +69,7 @@ function Shell() {
       <div role="status" className="border-b border-neutral-400 bg-neutral-200 px-4 py-3 text-sm text-neutral-900">
         {status.data?.data_source === "simulated" ? "DEMO DATA: synthetic prices. AI text may be generated or placeholder; not real market calls." : `Data: ${status.data?.data_source ?? "checking connection"}. Research only, not execution prices.`}
       </div>
-      {status.isError && <div role="alert" className="p-4 text-neutral-900">{String(status.error)}. Check the engine and API key. <button onClick={() => {localStorage.removeItem("engine_api_key"); location.reload();}}>Change key</button></div>}
+      {status.isError && <div role="alert" className="p-4 text-neutral-900">{String(status.error)}. Check the engine and API key. <button onClick={() => {clearKey(); location.reload();}}>Change key</button></div>}
       <main id="main" tabIndex={-1} className="mx-auto max-w-6xl space-y-4 p-4">
         <Routes>
           <Route path="/" element={<Overview />} /><Route path="/portfolio" element={<Portfolio />} />
