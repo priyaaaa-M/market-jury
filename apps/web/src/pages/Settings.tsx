@@ -22,11 +22,11 @@ export default function Settings() {
     finally { setChecking(false); }
   };
   const num = (k: string, step = 1) => (
-    <label className="flex items-center justify-between text-sm">{k}
-      <input type="number" step={step} className="w-28 rounded bg-neutral-100 p-1" defaultValue={c[k]}
+    <label className="flex flex-wrap items-center justify-between gap-2 text-sm break-all">{k}
+      <input type="number" step={step} className="w-28 shrink-0 rounded bg-neutral-100 p-1" defaultValue={c[k]}
         onBlur={(e) => save.mutate({ [k]: typeof c[k] === "number" && !Number.isInteger(c[k]) ? parseFloat(e.target.value) : Number(e.target.value) })} /></label>);
   const flag = (k: string) => (
-    <label className="flex items-center justify-between text-sm">{k}
+    <label className="flex flex-wrap items-center justify-between gap-2 text-sm break-all">{k}
       <input type="checkbox" checked={c[k]} onChange={(e) => save.mutate({ [k]: e.target.checked })} /></label>);
   return (
     <>
@@ -50,7 +50,7 @@ export default function Settings() {
       {!c && !cfg.isError && <p>Loading engine settings…</p>}
       {c && <>
       <Card title="Trading">
-        <label className="flex items-center justify-between text-sm">TRADING_MODE
+        <label className="flex flex-wrap items-center justify-between gap-2 text-sm break-all">TRADING_MODE
           <select className="rounded bg-neutral-100 p-1" value={c.TRADING_MODE} onChange={(e) => save.mutate({ TRADING_MODE: e.target.value })}>
             {["equity_intraday", "equity_delivery", "fno", "all"].map((m) => <option key={m}>{m}</option>)}</select></label>
         {flag("AGENT_FORCE_ACTIVE")}{flag("AGENT_AUTO_EXECUTE")}{num("AGENT_DEBATE_ROUNDS")}{num("AGENT_MIN_CONFIDENCE", 0.05)}
