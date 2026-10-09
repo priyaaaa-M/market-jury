@@ -1,5 +1,5 @@
 [project]
-name = "sudo-mcp"
+name = "market-jury-mcp"
 version = "0.1.0"
 description = "MCP server exposing the engine's research, regime and accountability tools to AI assistants"
 requires-python = ">=3.10"

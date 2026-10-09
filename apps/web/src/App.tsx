@@ -41,7 +41,7 @@ function Shell() {
   return (
     <div className="min-h-screen">
       <header className="flex flex-wrap items-center gap-4 border-b border-slate-800 px-4 py-2">
-        <b>Market Copilot</b>
+        <b>market-jury</b>
         <nav className="flex flex-wrap gap-3 text-sm">
           {NAV.map(([to, l]) => (
             <NavLink key={to} to={to} end className={({ isActive }) => (isActive ? "text-emerald-400" : "text-slate-400 hover:text-slate-200")}>{l}</NavLink>

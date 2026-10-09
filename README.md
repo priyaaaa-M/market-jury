@@ -1,4 +1,4 @@
-# Market Copilot (working title)
+# market-jury
 
 Multi-agent research and **paper-trading** copilot for Indian equities. AI agents research, screen, and argue the bull and bear case for a stock; a judge gives a verdict; you approve paper trades. Phase 2 adds a **verdict scoreboard** (how did past calls do vs Nifty?) and a **regime layer** (calmer vs stressed markets change how much conviction is needed). An **MCP server** lets Claude and other assistants use the analysis.
 
@@ -24,7 +24,7 @@ Outside market hours set `AGENT_FORCE_ACTIVE=true` (Settings page). Data is simu
 
 Claude Desktop MCP config:
 ```json
-{"mcpServers": {"market-copilot": {"command": "engine-mcp",
+{"mcpServers": {"market-jury": {"command": "engine-mcp",
   "env": {"ENGINE_URL": "http://127.0.0.1:8008", "ENGINE_API_KEY": "your-key"}}}}
 ```
 

@@ -12,7 +12,7 @@ BASE = os.getenv("ENGINE_URL", "http://127.0.0.1:8008")
 KEY = os.getenv("ENGINE_API_KEY", "")
 ALLOW_EXEC = os.getenv("ENGINE_MCP_ALLOW_PAPER_EXEC") == "1"
 
-mcp = FastMCP("market-copilot")
+mcp = FastMCP("market-jury")
 
 
 def _call(method: str, path: str, **kw: Any) -> Any:
