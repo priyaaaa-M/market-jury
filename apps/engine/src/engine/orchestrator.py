@@ -27,6 +27,15 @@ class Engine:
         self.cfg = cfg or Config()
         self.store = store or Store()
         self.data = data or data_from_env()
+        self.secondary_data = None
+        import os
+        if os.getenv("TWELVE_DATA_CROSSCHECK") == "true":
+            from .twelvedata import TwelveData
+            self.secondary_data = TwelveData()
+        self.regime_data = self.data
+        if self.data.source == "twelve_data":
+            from .data import YahooData
+            self.regime_data = YahooData()  # disclosed separate index source, never synthetic
         self.bus = EventBus()
         self.bus.subscribe(self.store.add_event)
         self.costs = CostTracker(self.cfg)
@@ -72,11 +81,11 @@ class Engine:
         return self.broker.summary(self.prices())
 
     def current_regime(self) -> dict[str, Any]:
-        result = regime_mod.classify(self.data.index_series("NIFTY", 60),
-                                     self.data.index_series("INDIAVIX", 30),
-                                     context=self.store.get("regime_context", {}), source=self.data.source)
+        result = regime_mod.classify(self.regime_data.index_series("NIFTY", 60),
+                                     self.regime_data.index_series("INDIAVIX", 30),
+                                     context=self.store.get("regime_context", {}), source=self.regime_data.source)
         if self.data.source != "simulated":
-            result["observations"] = {name: self.data.quote(name) for name in ("NIFTY", "INDIAVIX")}
+            result["observations"] = {name: self.regime_data.quote(name) for name in ("NIFTY", "INDIAVIX")}
         return result
 
     # pipeline steps

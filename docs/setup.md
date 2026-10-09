@@ -53,3 +53,14 @@ The quote panel has cross_checked / mismatch / incomparable / unavailable status
 Optional `PUBLIC_CROSSCHECK_FILE` points to a JSON evidence snapshot. For the inspected Oct 9 run we used `docs/evidence/public-crosscheck-2026-10-09.json`, a fetched public-page snapshot, NOT a live second feed. TCS evidence is Oct 8, Reliance evidence is morning intraday, so both honestly show incomparable against Oct 9 adjusted closing bars. INFY/HDFCBANK have no second observation and show unavailable. Snapshot evidence ages out after 24 hours and is never silently updated. Do not use the dated example as today's feed.
 
 NSE quote endpoint and direct Trendlyne requests returned 403; no bypass or repeated probing. Automated independent-feed integration remains open. No broker/demat connection is required or made.
+
+## Twelve Data (optional, entitlement-dependent)
+Set `TWELVE_DATA_API_KEY` locally and `TWELVE_DATA_CROSSCHECK=true` while keeping `MARKET_DATA_MODE=yahoo` to compare Yahoo adjusted daily bars against Twelve Data `adjust=all` daily bars. No broker account is used. Do not put the key in source/chat; environment/vault only. Official Basic limits are 8 credits/min and 800/day, with limited market entitlement. NSE may not be included; verify with your key. No paid upgrade is automatic.
+
+Response cache is 5 minutes, shared across clicks; quote-panel refresh runs every 5 minutes. Original fetch time is preserved. A shared rolling 8/min budget and 800/day process-local cap limit requests. 429 / JSON code 429 establishes at least a 60-second cooldown; repeated reads during it make no request. A later refresh retries after the cooldown. Other provider/network failures have cooldowns. There is no rapid retry loop. Limits are process-local, not distributed across multiple deployments; usage outside this app shares the provider quota.
+
+Authenticated `/market/twelve/TCS?intraday=true` returns the quote endpoint's last-quote timestamp and explicitly different `intraday_last_trade` type. `/market/twelve/TCS` returns adjusted daily close evidence. Intraday quotes do NOT cross-check Yahoo daily closes. Cached observations may be delayed/entitlement restricted; their date and source remain visible. This is not live tick execution data.
+
+`MARKET_DATA_MODE=twelve_data` is also supported for equity prices/history, but regime Nifty/VIX explicitly stays on Yahoo since Twelve index mapping is unverified. Twelve-only Nifty scoreboard evaluation is not complete. Yahoo-primary with Twelve optional cross-check is the supported verification route.
+
+Adapter has mocked cache, backoff, request-budget, intraday/provenance and no-key tests. Live NSE access has not been verified without a supplied key.

@@ -108,8 +108,22 @@ def create_app(engine: Engine | None = None, api_key: str | None = None) -> Fast
                 evidence = {}
         quotes = {s: eng.data.quote(s) for s in eng.watchlist}
         for symbol, q in quotes.items():
-            q["crosscheck"] = compare(q, evidence.get(symbol))
+            if eng.secondary_data is not None:
+                try:
+                    second = eng.secondary_data.quote(symbol)
+                    q["crosscheck"] = compare(q, second)
+                except ValueError as e:
+                    q["crosscheck"] = {"status": "unavailable", "reason": str(e)}
+            else:
+                q["crosscheck"] = compare(q, evidence.get(symbol))
         return quotes
+
+    @app.get("/market/twelve/{symbol}", dependencies=dep)
+    def twelve_quote(symbol: str, intraday: bool = False):
+        provider = eng.secondary_data or (eng.data if eng.data.source == "twelve_data" else None)
+        if provider is None: raise HTTPException(409, "Twelve Data not enabled")
+        try: return provider.quote(symbol.upper(), intraday=intraday)
+        except ValueError as e: raise HTTPException(503, str(e), headers={"Retry-After":"60"})
 
     @app.get("/config", dependencies=dep)
     def get_config() -> dict[str, Any]:

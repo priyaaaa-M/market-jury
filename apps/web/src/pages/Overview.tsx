@@ -10,7 +10,7 @@ export default function Overview() {
   const regime = useQuery({ queryKey: ["regime"], queryFn: () => api("/regime"), staleTime: 60_000 });
   const act = useMutation({ mutationFn: ({ kind, i }: { kind: string; i: number }) => post(`/trade/${kind}/${i}`),
     onSuccess: () => qc.invalidateQueries() });
-  const quotes = useQuery({queryKey:["quotes"], queryFn:()=>api("/quotes")});
+  const quotes = useQuery({queryKey:["quotes"], queryFn:()=>api("/quotes"), staleTime:300_000, refetchInterval:300_000, refetchOnWindowFocus:false, retry:false});
   const p = pf.data;
   return (
     <>

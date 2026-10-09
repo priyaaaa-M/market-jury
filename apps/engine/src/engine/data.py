@@ -94,4 +94,7 @@ def data_from_env():
     mode = os.getenv("MARKET_DATA_MODE", "simulated")
     if mode == "simulated": return SimulatedData()
     if mode == "yahoo": return YahooData()
-    raise ValueError("MARKET_DATA_MODE must be simulated or yahoo")
+    if mode == "twelve_data":
+        from .twelvedata import TwelveData
+        return TwelveData()
+    raise ValueError("MARKET_DATA_MODE must be simulated, yahoo or twelve_data")
