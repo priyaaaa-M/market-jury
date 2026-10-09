@@ -18,6 +18,7 @@ export default function Regime() {
       <div className="flex flex-wrap gap-6"><Stat label="Regime" value={d.regime} /><Stat label="Trend" value={d.trend} /><Stat label="Volatility" value={d.volatility} />
         <Stat label="Size multiplier" value={d.size_multiplier} /><Stat label="Extra confidence required" value={`+${Math.round(d.confidence_adjust * 100)}%`} /></div>
       <pre className="mt-3 overflow-x-auto text-xs text-slate-300">{JSON.stringify(d.inputs, null, 1)}</pre>
+      {d.observations && <div className="mt-3 text-sm">{Object.values(d.observations).map((q:any)=><p key={q.symbol}>{q.symbol}: {Number(q.price).toFixed(2)} · as of {q.as_of_date} · {q.data_source} / {q.freshness}</p>)}<p className="mt-2 text-xs text-slate-300">Provider-reported adjusted daily bars. Not live ticks or independently exchange-verified closing values.</p></div>}
       <p className="mt-2 text-sm text-slate-300">{d.method}</p>
       <p className="mt-2 text-sm">Context: {d.context_status}. Missing: {(d.missing_inputs??[]).join(", ") || "none"}. Stale or absent context is not fabricated.</p>
       <form className="mt-4 grid gap-3 sm:grid-cols-2" onSubmit={e=>{e.preventDefault();save.mutate();}}>

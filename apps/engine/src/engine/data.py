@@ -64,6 +64,8 @@ class YahooData(SimulatedData):
         try:
             df = yf.Ticker(ticker).history(start=start.isoformat(), end=(end+timedelta(days=1)).isoformat(), auto_adjust=True)
             bars = [{"date": i.date().isoformat(), "close": float(r["Close"])} for i,r in df.iterrows()]
+            if any(not math.isfinite(b["close"]) or b["close"] <= 0 for b in bars):
+                raise ValueError("Invalid provider close")
         except Exception as e:
             raise ValueError(f"Market data unavailable for {symbol}; no simulated fallback") from e
         if not bars:
@@ -77,7 +79,12 @@ class YahooData(SimulatedData):
         today = datetime.now(timezone.utc).date()
         bars = self.daily_bars(symbol, today-timedelta(days=15), today)
         return {"symbol": symbol, "price": bars[-1]["close"], "volume": None,
-                "timestamp": bars[-1]["date"], "exchange": "NSE", "data_source": self.source,
+                "timestamp": bars[-1]["date"], "as_of_date": bars[-1]["date"],
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "same_day_daily_bar" if bars[-1]["date"] == today.isoformat() else "older_daily_bar",
+                "price_type": "Yahoo adjusted daily close; not exchange-verified live quote",
+                "comparison_price_type": "adjusted_daily_close",
+                "exchange": "NSE", "data_source": self.source,
                 "extra": {"prev_close": bars[-2]["close"] if len(bars)>1 else bars[-1]["close"]}}
     def price_on(self, symbol: str, when: datetime) -> float | None:
         bars = self.daily_bars(symbol, when.date(), when.date())

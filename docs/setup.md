@@ -46,3 +46,10 @@ For a future hardened self-hosted instance, `PUBLIC_SCOREBOARD=true` enables una
 
 ## Accessibility
 Responsive navigation, labeled planning/context inputs, keyboard focus indicator, skip-to-content, reduced-motion support and text labels alongside color. Desktop and 390px mobile overview visually checked. This is not a WCAG audit or a claim of full multilingual accessibility.
+
+## Independent public-source comparison
+The quote panel has cross_checked / mismatch / incomparable / unavailable statuses. Agreement requires a different provider, same symbol, exchange, date and price type, recent observed evidence and price within ₹0.05. This is two-source agreement, not NSE certification or a guarantee of accuracy.
+
+Optional `PUBLIC_CROSSCHECK_FILE` points to a JSON evidence snapshot. For the inspected Oct 9 run we used `docs/evidence/public-crosscheck-2026-10-09.json`, a fetched public-page snapshot, NOT a live second feed. TCS evidence is Oct 8, Reliance evidence is morning intraday, so both honestly show incomparable against Oct 9 adjusted closing bars. INFY/HDFCBANK have no second observation and show unavailable. Snapshot evidence ages out after 24 hours and is never silently updated. Do not use the dated example as today's feed.
+
+NSE quote endpoint and direct Trendlyne requests returned 403; no bypass or repeated probing. Automated independent-feed integration remains open. No broker/demat connection is required or made.

@@ -9,3 +9,8 @@
 - Engine: 23 tests pass. Ruff passes. TypeScript/Vite production build succeeds. Dependency changes rebuilt; React Router updated to remove production audit findings, Vite/plugin updated. Remaining Tailwind 3 toolchain advisories documented in SECURITY.md. Not production hosting approval.
 
 No broker access, live data, paid LLM, public hosting or GitHub push. Screenshots use simulated observations and test-only journal text. Engine API secret and databases excluded from source.
+
+## Additional live tests
+- OpenRouter free-only router: one two-sided TCS debate, two generated calls; cohere/north-mini-code:free and nvidia/nemotron-3-ultra-550b-a55b:free; receipts report zero cost, account usage stayed zero. Real AI text on synthetic inputs, not a real market call. Keys saved to vault, local .env removed after test; no keys tracked.
+- Data-only Yahoo run: MARKET_DATA_MODE=yahoo, no LLM key. Oct 9 bars: TCS 2156.00, RELIANCE 1170.30, INFY 1023.40, HDFCBANK 707.25, Nifty 22520.45, VIX 14.375. Same-day adjusted daily observations; not live ticks or NSE-verified official close. Fresh independent public-page evidence could not establish comparable closing agreement.
+- Public cross-check UI tested with factual dated snapshots: TCS different date, Reliance different price type, both incomparable; other watchlist symbols unavailable. Comparator unit tests exercise agreement, mismatch, incomparable and unavailable. No actual two-source closing agreement obtained.

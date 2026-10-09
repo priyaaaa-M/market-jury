@@ -95,7 +95,21 @@ def create_app(engine: Engine | None = None, api_key: str | None = None) -> Fast
 
     @app.get("/quotes", dependencies=dep)
     def quotes() -> dict[str, Any]:
-        return {s: eng.data.quote(s) for s in eng.watchlist}
+        from .crosscheck import compare
+        evidence = eng.store.get("public_crosschecks", {})
+        # Explicit optional snapshot input, never silently claim a live independent feed.
+        snapshot = os.getenv("PUBLIC_CROSSCHECK_FILE")
+        if snapshot:
+            import json
+            from pathlib import Path
+            try:
+                evidence = json.loads(Path(snapshot).read_text())
+            except (OSError, ValueError):
+                evidence = {}
+        quotes = {s: eng.data.quote(s) for s in eng.watchlist}
+        for symbol, q in quotes.items():
+            q["crosscheck"] = compare(q, evidence.get(symbol))
+        return quotes
 
     @app.get("/config", dependencies=dep)
     def get_config() -> dict[str, Any]:

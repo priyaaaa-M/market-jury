@@ -10,9 +10,15 @@ export default function Overview() {
   const regime = useQuery({ queryKey: ["regime"], queryFn: () => api("/regime"), staleTime: 60_000 });
   const act = useMutation({ mutationFn: ({ kind, i }: { kind: string; i: number }) => post(`/trade/${kind}/${i}`),
     onSuccess: () => qc.invalidateQueries() });
+  const quotes = useQuery({queryKey:["quotes"], queryFn:()=>api("/quotes")});
   const p = pf.data;
   return (
     <>
+      <Card title="Market observations">
+        {quotes.isError && <p role="alert">{String(quotes.error)}</p>}
+        <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr><th>Symbol</th><th>Price</th><th>As of</th><th>Source / freshness</th><th>Independent check</th></tr></thead><tbody>{Object.values(quotes.data??{}).map((q:any)=><tr key={q.symbol} className="border-t border-slate-700"><td>{q.symbol}</td><td>{Number(q.price).toLocaleString("en-IN", {style:"currency",currency:"INR",minimumFractionDigits:2,maximumFractionDigits:2})}</td><td>{q.as_of_date??q.timestamp}</td><td>{q.data_source} · {q.freshness??"demo"}</td><td><span>{q.crosscheck?.status??"unavailable"}</span>{q.crosscheck?.reason && <p className="text-xs text-slate-300">{q.crosscheck.reason.replaceAll("_", " ")}</p>}{q.crosscheck?.secondary && <details className="mt-1 text-xs"><summary>Second source evidence</summary><p>{q.crosscheck.secondary.provider}: ₹{q.crosscheck.secondary.price} · {q.crosscheck.secondary.as_of_date} · {q.crosscheck.secondary.comparison_price_type}</p><p>Source time: {q.crosscheck.secondary.source_timestamp}</p><p>{q.crosscheck.secondary.caveat}</p><a className="underline" href={q.crosscheck.secondary.source_url} target="_blank" rel="noreferrer">Source</a></details>}</td></tr>)}</tbody></table></div>
+        <p className="mt-2 text-xs text-slate-300">Yahoo mode uses delayed adjusted daily closes, not live executable quotes. Same-day bars are provider-reported, not independently NSE-verified. Check source date before use.</p>
+      </Card>
       <Card title="Market regime">
         <div className="flex flex-wrap gap-6">
           <Stat label="Regime" value={regime.data?.regime ?? "…"} />

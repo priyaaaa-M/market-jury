@@ -72,9 +72,12 @@ class Engine:
         return self.broker.summary(self.prices())
 
     def current_regime(self) -> dict[str, Any]:
-        return regime_mod.classify(self.data.index_series("NIFTY", 60),
-                                   self.data.index_series("INDIAVIX", 30),
-                                   context=self.store.get("regime_context", {}), source=self.data.source)
+        result = regime_mod.classify(self.data.index_series("NIFTY", 60),
+                                     self.data.index_series("INDIAVIX", 30),
+                                     context=self.store.get("regime_context", {}), source=self.data.source)
+        if self.data.source != "simulated":
+            result["observations"] = {name: self.data.quote(name) for name in ("NIFTY", "INDIAVIX")}
+        return result
 
     # pipeline steps
     def _gate(self) -> None:

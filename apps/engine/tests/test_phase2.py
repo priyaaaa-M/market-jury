@@ -113,3 +113,18 @@ def test_new_real_call_waits_without_querying_future():
     v={'timestamp':'2026-10-09T12:00:00+05:30','symbol':'TCS','verdict':'buy','confidence':.7,'audit':{'data_source':'fixture_real'}}
     r=evaluate(NoFetch(),[v],datetime(2026,10,9,tzinfo=ZoneInfo('Asia/Kolkata')))
     assert r['outcomes'][0]['status']=='waiting'
+
+
+def test_independent_crosscheck_requires_comparable_fresh_evidence():
+    from engine.crosscheck import compare
+    primary={'symbol':'TCS','exchange':'NSE','as_of_date':'2026-10-09','comparison_price_type':'adjusted_daily_close','price':2156,'data_source':'yahoo_delayed'}
+    secondary={**primary,'provider':'independent_fixture','observed_at':datetime.now(ZoneInfo('UTC')).isoformat(),'source_url':'https://example.test/quote'}
+    assert compare(primary,secondary)['status']=='cross_checked'
+    secondary['price']=2160
+    assert compare(primary,secondary)['status']=='mismatch'
+    secondary['comparison_price_type']='intraday_last_trade'
+    assert compare(primary,secondary)['status']=='incomparable'
+    assert compare(primary,None)['status']=='unavailable'
+    secondary['comparison_price_type']='adjusted_daily_close'
+    secondary['provider']='yahoo_delayed'
+    assert compare(primary,secondary)['reason']=='not_independent'

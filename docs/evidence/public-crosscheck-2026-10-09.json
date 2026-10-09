@@ -1,0 +1,20 @@
+{
+  "TCS": {
+    "symbol": "TCS", "exchange": "NSE", "price": 2076.00,
+    "as_of_date": "2026-10-08", "comparison_price_type": "intraday_last_trade",
+    "provider": "Trendlyne public page (snapshot, not refreshing feed)",
+    "source_url": "https://trendlyne.com/equity/1372/TCS/tata-consultancy-services-ltd/",
+    "source_timestamp": "2026-10-08T15:31:00+05:30",
+    "observed_at": "2026-10-09T17:12:08+05:30",
+    "caveat": "Page showed Oct 8 NSE quote. Not comparable to Oct 9 adjusted daily close."
+  },
+  "RELIANCE": {
+    "symbol": "RELIANCE", "exchange": "NSE", "price": 1172.60,
+    "as_of_date": "2026-10-09", "comparison_price_type": "intraday_last_trade",
+    "provider": "Trendlyne public page (snapshot, not refreshing feed)",
+    "source_url": "https://trendlyne.com/equity/1127/RELIANCE/reliance-industries-ltd/",
+    "source_timestamp": "2026-10-09T11:47:00+05:30",
+    "observed_at": "2026-10-09T17:12:08+05:30",
+    "caveat": "Morning NSE last trade, not a same-day closing price. Direct feed blocked; no agreement claimed."
+  }
+}
