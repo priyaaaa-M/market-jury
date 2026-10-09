@@ -57,7 +57,7 @@ function Shell() {
         </div>
       </header>
       <div role="status" className="border-b border-amber-800 bg-amber-950 px-4 py-3 text-sm text-amber-100">
-        {status.data?.data_source === "simulated" ? "DEMO DATA: synthetic prices and offline arguments. Not real market calls." : `Data: ${status.data?.data_source ?? "checking connection"}. Research only, not execution prices.`}
+        {status.data?.data_source === "simulated" ? "DEMO DATA: synthetic prices. AI text may be generated or placeholder; not real market calls." : `Data: ${status.data?.data_source ?? "checking connection"}. Research only, not execution prices.`}
       </div>
       {status.isError && <div role="alert" className="p-4 text-rose-200">{String(status.error)}. Check the engine and API key. <button onClick={() => {localStorage.removeItem("engine_api_key"); location.reload();}}>Change key</button></div>}
       <main id="main" tabIndex={-1} className="mx-auto max-w-6xl space-y-4 p-4">
