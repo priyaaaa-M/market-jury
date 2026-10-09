@@ -149,6 +149,7 @@ class Engine:
                 if self.four_role_team:
                     self.debate_messages.setdefault(symbol, []).append({"agent_name": name,
                         "argument": result.get("argument"), "evidence": result.get("evidence", []),
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
                         "model": getattr(agent.llm, "model", "unknown"),
                         "receipt": dict(getattr(agent.llm, "last_receipt", {}))})
                     await self.bus.emit("debate_progress", {"symbol": symbol, "role_completed": name})

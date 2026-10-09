@@ -16,6 +16,11 @@ from .orchestrator import Engine
 TASK_TYPES = {"research", "screen", "debate", "analyze"}
 
 
+class JuryChatIn(BaseModel):
+    question: str = Field(min_length=1, max_length=1000)
+    symbol: str = Field(min_length=1, max_length=30)
+
+
 class TaskIn(BaseModel):
     type: str
     symbols: list[str] = []
@@ -61,6 +66,14 @@ def create_app(engine: Engine | None = None, api_key: str | None = None) -> Fast
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"ok": "true"}
+
+    @app.post("/jury-chat", dependencies=dep)
+    def jury_chat(body: JuryChatIn):
+        from .jurychat import answer
+        try:
+            return answer(eng.store, body.question, body.symbol)
+        except ValueError as e:
+            raise HTTPException(400, str(e))
 
     @app.get("/status", dependencies=dep)
     def status() -> dict[str, Any]:

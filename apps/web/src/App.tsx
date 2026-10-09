@@ -6,6 +6,7 @@ import { getKey, setKey, clearKey, validateKey } from "./lib/api";
 import { useLive } from "./lib/useLive";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "./lib/api";
+import JuryChat from "./pages/JuryChat";
 import Overview from "./pages/Overview";
 import Portfolio from "./pages/Portfolio";
 import Debates from "./pages/Debates";
@@ -19,7 +20,7 @@ import Workbench from "./pages/Workbench";
 
 const GROUPS = [
   {title:"Market desk", items:[["/","Overview","◈"],["/watchlist","Watchlist","⊙"],["/regime","Market regime","∿"]]},
-  {title:"The jury", items:[["/debates","Discussion room","◉"],["/agents","Agent studio","◇"],["/timeline","Session timeline","≡"]]},
+  {title:"The jury", items:[["/chat","Ask the jury","↳"],["/debates","Discussion room","◉"],["/agents","Agent studio","◇"],["/timeline","Session timeline","≡"]]},
   {title:"Accountability", items:[["/scoreboard","Scoreboard","▥"],["/portfolio","Paper portfolio","▧"],["/workbench","Risk & journal","⊞"]]},
   {title:"Your space", items:[["/settings","Profile & settings","⚙"]]},
 ];
@@ -78,7 +79,7 @@ function Shell() {
       <motion.main initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} transition={{duration:.25}} key={location.pathname} id="main" tabIndex={-1} className="desk-main mx-auto max-w-6xl space-y-4 p-4">
         <Routes>
           <Route path="/" element={<Overview />} /><Route path="/portfolio" element={<Portfolio />} />
-          <Route path="/debates" element={<Debates />} /><Route path="/agents" element={<Agents />} />
+          <Route path="/chat" element={<JuryChat />} /><Route path="/debates" element={<Debates />} /><Route path="/agents" element={<Agents />} />
           <Route path="/watchlist" element={<Watchlist />} /><Route path="/timeline" element={<Timeline />} />
           <Route path="/scoreboard" element={<Scoreboard />} /><Route path="/regime" element={<Regime />} />
           <Route path="/workbench" element={<Workbench />} /><Route path="/settings" element={<Settings />} />
