@@ -29,3 +29,6 @@ Claude Desktop MCP config:
 ```
 
 See [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md), [docs/roadmap.md](docs/roadmap.md). Licensed MIT.
+
+## CI
+A GitHub Actions workflow is in `docs/ci.yml.example`. Copy it to `.github/workflows/ci.yml` to enable lint, tests and the web build.
