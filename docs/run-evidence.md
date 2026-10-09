@@ -17,3 +17,5 @@ No broker access, live data, paid LLM, public hosting or GitHub push. Screenshot
 
 ## Monochrome UI
 Black/white/grays restyle verified at desktop and 390px mobile. Active navigation underline, explicit badge text and white outlines preserve status meaning without color. White BUY badge, black outlined SELL badge, gray HOLD badge. Existing wide observation table scrolls within the card; mobile swipe hint added and right-side source/check columns visually inspected. Risk-planner API flow still works. This is a visual check, not a formal accessibility audit.
+
+Latest visual direction: light monochrome (white background/cards, dark text, gray controls). Desktop and 390px mobile inspected; risk planner request works. White BUY badge has black outline for visibility on white cards, SELL retains black fill, HOLD gray. Prior black-background screenshots are superseded by this user-directed light theme.
