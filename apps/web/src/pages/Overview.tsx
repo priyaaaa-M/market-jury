@@ -1,3 +1,4 @@
+import GettingStarted from "../components/GettingStarted";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, post } from "../lib/api";
 import { Btn, Card, Stat, Verdict, inr, tone } from "../components/ui";
@@ -14,6 +15,7 @@ export default function Overview() {
   const p = pf.data;
   return (
     <>
+      <GettingStarted />
       <Card title="Market observations">
         {quotes.isError && <p role="alert">{String(quotes.error)}</p>}
         <p className="mb-2 text-xs text-neutral-700 sm:hidden">Swipe table sideways for source and independent-check details.</p>
@@ -47,6 +49,7 @@ export default function Overview() {
         ))}
       </Card>
       <Card title="Latest verdicts">
+        {verdicts.isSuccess && !verdicts.data?.verdicts?.length && <p className="text-sm text-neutral-600">No saved verdicts yet. Start a discussion above to create the first one. Market prices alone do not create a jury decision.</p>}
         {(verdicts.data?.verdicts ?? []).map((v: any) => (
           <div key={v.id} className="flex items-center gap-3 border-t border-neutral-200 py-2 text-sm">
             <b className="w-24">{v.symbol}</b><Verdict v={v.verdict} /><span>{Math.round(v.confidence * 100)}%</span>

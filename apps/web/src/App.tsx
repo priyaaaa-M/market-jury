@@ -56,17 +56,20 @@ export default function App() {
 function Shell() {
   const { connected } = useLive();
   const [menu, setMenu] = useState(false);
+  const [collapsed,setCollapsed]=useState(()=>localStorage.getItem("sidebar_collapsed")==="true");
+  const toggleSidebar=()=>setCollapsed(v=>{localStorage.setItem("sidebar_collapsed",String(!v));return !v;});
   const location = useLocation();
   const title = GROUPS.flatMap(g=>g.items).find(i=>i[0]===location.pathname)?.[1] || "Market desk";
   const name = localStorage.getItem("display_name") || "Your workspace";
   const status = useQuery({ queryKey: ["status"], queryFn: () => api("/status") });
   if (status.isError && String(status.error).includes("Invalid API key")) return <KeyGate onSet={() => window.location.reload()} />;
   return (
-    <MotionConfig reducedMotion="user"><div className="min-h-screen">
+    <MotionConfig reducedMotion="user"><div className={`app-layout min-h-screen ${collapsed?"sidebar-collapsed":""}`}>
       <a className="skip-link" href="#main">Skip to content</a>
-      <aside className={`sidebar ${menu ? "sidebar-open" : ""}`}>
+      <aside aria-label="Workspace sidebar" className={`sidebar ${menu ? "sidebar-open" : ""}`}>
+        <button className="sidebar-toggle" aria-label={collapsed?"Expand sidebar":"Collapse sidebar"} aria-expanded={!collapsed} onClick={toggleSidebar}>{collapsed?"→":"←"}</button>
         <div className="brand-mark"><span className="brand-icon">MJ</span><div><b>market-jury</b><small>THE RESEARCH DESK</small></div><button className="sidebar-close" aria-label="Close navigation" onClick={()=>setMenu(false)}>×</button></div>
-        <nav aria-label="Main navigation">{GROUPS.map(g=><section className="nav-group" key={g.title}><h2>{g.title}</h2>{g.items.map(([to,label,icon])=><NavLink to={to} end key={to} onClick={()=>setMenu(false)} className={({isActive})=>`nav-item ${isActive?"nav-active":""}`}><span aria-hidden="true">{icon}</span><span>{label}</span><span className="nav-arrow" aria-hidden="true">↗</span></NavLink>)}</section>)}</nav>
+        <nav aria-label="Main navigation">{GROUPS.map(g=><section className="nav-group" key={g.title}><h2>{g.title}</h2>{g.items.map(([to,label,icon])=><NavLink to={to} end key={to} title={label} aria-label={label} onClick={()=>setMenu(false)} className={({isActive})=>`nav-item ${isActive?"nav-active":""}`}><span aria-hidden="true">{icon}</span><span>{label}</span><span className="nav-arrow" aria-hidden="true">↗</span></NavLink>)}</section>)}</nav>
         <NavLink to="/settings" className="profile-tile" onClick={()=>setMenu(false)}><span className="avatar">{name.slice(0,2).toUpperCase()}</span><div><b>{name}</b><small>LOCAL PROFILE · PAPER ONLY</small></div></NavLink>
       </aside>
       <Dialog.Root open={menu} onOpenChange={setMenu}><Dialog.Portal><Dialog.Overlay className="nav-backdrop"/><Dialog.Content className="mobile-nav-dialog"><Dialog.Title className="text-xl font-bold">market-jury</Dialog.Title><Dialog.Description className="text-xs text-neutral-600">Research workspace navigation</Dialog.Description><Dialog.Close className="dialog-close" aria-label="Close navigation">×</Dialog.Close><nav aria-label="Mobile navigation">{GROUPS.map(g=><section className="nav-group" key={g.title}><h2>{g.title}</h2>{g.items.map(([to,label,icon])=><NavLink key={to} to={to} end onClick={()=>setMenu(false)} className={({isActive})=>`mobile-nav-item ${isActive?"mobile-nav-active":""}`}><span aria-hidden="true">{icon}</span> {label}</NavLink>)}</section>)}</nav></Dialog.Content></Dialog.Portal></Dialog.Root>

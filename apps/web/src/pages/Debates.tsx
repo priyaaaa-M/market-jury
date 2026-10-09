@@ -1,3 +1,5 @@
+import { PageIntro, Metric } from "../components/PageIntro";
+import GettingStarted from "../components/GettingStarted";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, post } from "../lib/api";
@@ -14,6 +16,8 @@ export default function Debates() {
   const run = useMutation({mutationFn:()=>post("/task",{type:"debate",symbols:[symbol]}),onSuccess:()=>{setMessage("Discussion requested. Each role may take a few minutes on free models.");qc.invalidateQueries({queryKey:["debate-progress"]});},onError:(e)=>setMessage(String(e))});
   const current=progress.data?.symbols?.[symbol];
   return <>
+    <PageIntro eyebrow="THE DISCUSSION ROOM / FOUR ROLES" title="Let the ideas collide." description="Bull, bear, risk and judge. Real completed turns only, public delayed market data, free models. No fabricated verdict when a session fails." icon="◈" accent="violet"><Metric label="SELECTED STOCK" value={symbol||"Loading…"}/><Metric label="SESSION STATE" value={current?.state||"idle"}/></PageIntro>
+    <details className="guide-disclosure"><summary>New here? See how to run your first discussion ↗</summary><GettingStarted symbol={symbol}/></details>
     <Card title="A discussion, not a crystal ball" right={<span className="discussion-label">04 ROLES / PAPER ONLY</span>}>
       <h2 className="text-2xl font-bold tracking-tight">Let the evidence face the jury.</h2>
       <p className="mt-2 text-sm text-neutral-600">Three perspectives. One final judge. Public delayed market data only. Model agreement is not proof of accuracy; confidence is not a calibrated probability.</p>

@@ -1,3 +1,4 @@
+import { PageIntro, Metric } from "../components/PageIntro";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { useState } from "react";
@@ -14,6 +15,8 @@ export default function Regime() {
   if (r.isError) return <p role="alert">{String(r.error)}</p>;
   if (!d) return <p>Loading…</p>;
   return (
+    <>
+      <PageIntro eyebrow="CONTEXT BEFORE CONVICTION" title="Read the room. Then the stock." description="Trend and volatility shape the research gates. Missing market context stays missing, never invented." icon="∿" accent="coral"><Metric label="REGIME" value={d.regime}/><Metric label="SIZE MULTIPLIER" value={d.size_multiplier}/><Metric label="CONTEXT" value={d.context_status}/></PageIntro>
     <Card title="Current regime">
       <div className="flex flex-wrap gap-6"><Stat label="Regime" value={d.regime} /><Stat label="Trend" value={d.trend} /><Stat label="Volatility" value={d.volatility} />
         <Stat label="Size multiplier" value={d.size_multiplier} /><Stat label="Extra confidence required" value={`+${Math.round(d.confidence_adjust * 100)}%`} /></div>
@@ -28,5 +31,6 @@ export default function Regime() {
       {save.isError && <p role="alert">{String(save.error)}</p>}
       <p className="mt-3 text-xs text-neutral-700">Enter observed context only. Breadth = advancing / (advancing + declining) × 100, same universe and date. Flows: net buys minus sells, ₹ crore. No automatic NSE feed is claimed.</p>
     </Card>
+    </>
   );
 }

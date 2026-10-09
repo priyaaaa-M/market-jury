@@ -1,3 +1,4 @@
+import { PageIntro } from "../components/PageIntro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, post, clearKey, validateKey, setKey } from "../lib/api";
@@ -30,6 +31,7 @@ export default function Settings() {
       <input type="checkbox" checked={c[k]} onChange={(e) => save.mutate({ [k]: e.target.checked })} /></label>);
   return (
     <>
+      <PageIntro eyebrow="YOUR SPACE / ENGINE CONTROLS" title="Make the desk yours." description="Personalise this browser, check your engine connection, and choose research settings. No brokerage connection or live trading." icon="⚙" accent="violet"><span className="intro-tag">Local profile</span><span className="intro-tag">Authentication stays on</span></PageIntro>
       <Card title="Connection">
         <p className="mb-2 text-sm">Change the key saved in this browser, not the server's secret. Copy API_KEY from the Render service Environment tab. Never use the rnd_ management key or LLM_API_KEY here.</p>
         <label className="block text-sm" htmlFor="replacement-key">New engine API key</label>
@@ -50,10 +52,11 @@ export default function Settings() {
       {!c && !cfg.isError && <p>Loading engine settings…</p>}
       {c && <>
       <Card title="Trading">
+        <p className="mb-3 text-sm text-neutral-600">Out-of-hours research: AGENT_FORCE_ACTIVE lets discussions run outside market hours. It does not enable live trading or automatic paper orders.</p>
         <label className="flex flex-wrap items-center justify-between gap-2 text-sm break-all">TRADING_MODE
           <select className="rounded bg-neutral-100 p-1" value={c.TRADING_MODE} onChange={(e) => save.mutate({ TRADING_MODE: e.target.value })}>
             {["equity_intraday", "equity_delivery", "fno", "all"].map((m) => <option key={m}>{m}</option>)}</select></label>
-        {flag("AGENT_FORCE_ACTIVE")}{flag("AGENT_AUTO_EXECUTE")}{num("AGENT_DEBATE_ROUNDS")}{num("AGENT_MIN_CONFIDENCE", 0.05)}
+        <label className="flex flex-wrap items-center justify-between gap-2 text-sm">Out-of-hours research (AGENT_FORCE_ACTIVE)<input type="checkbox" checked={c.AGENT_FORCE_ACTIVE} onChange={e=>save.mutate({AGENT_FORCE_ACTIVE:e.target.checked})}/></label>{flag("AGENT_AUTO_EXECUTE")}{num("AGENT_DEBATE_ROUNDS")}{num("AGENT_MIN_CONFIDENCE", 0.05)}
         <p className="text-xs text-neutral-600">Auto-execute only places paper orders. Live trading is not implemented.</p>
       </Card>
       <Card title="LLM budgets (USD)">{num("AGENT_DAILY_BUDGET_USD", 0.5)}{num("AGENT_PER_AGENT_BUDGET_USD", 0.5)}{num("AGENT_MASTER_BUDGET_USD", 0.5)}</Card>

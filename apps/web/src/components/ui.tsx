@@ -1,14 +1,15 @@
 import { ReactNode } from "react";
+import { motion } from "motion/react";
 
 export const Card = ({ title, children, right }: { title?: string; children: ReactNode; right?: ReactNode }) => (
-  <section className="rounded-lg border border-neutral-200 bg-white p-4">
+  <motion.section initial={{opacity:0,y:8}} whileInView={{opacity:1,y:0}} viewport={{once:true,amount:.1}} transition={{duration:.25}} className="data-card rounded-lg border border-neutral-200 bg-white p-4">
     {(title || right) && (
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-600">{title}</h2>{right}
       </div>
     )}
     {children}
-  </section>
+  </motion.section>
 );
 
 export const Stat = ({ label, value, tone }: { label: string; value: ReactNode; tone?: "good" | "bad" }) => (

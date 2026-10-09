@@ -1,3 +1,4 @@
+import { PageIntro, Metric, EmptyState } from "../components/PageIntro";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { Card } from "../components/ui";
@@ -11,6 +12,8 @@ export default function Scoreboard() {
   if (!d) return <p>Loading…</p>;
   return (
     <>
+      <PageIntro eyebrow="ACCOUNTABILITY / REAL OUTCOMES" title="Receipts beat confidence." description="Track how saved verdicts perform over real observation horizons. Too few samples? No accuracy claim." icon="▥" accent="lime"><Metric label="VERDICTS LOGGED" value={d.total_verdicts}/><Metric label="HORIZON ROWS SCORED" value={d.scored_rows}/><Metric label="DEMO CALLS EXCLUDED" value={d.excluded_demo}/></PageIntro>
+      {!d.scored_rows&&<EmptyState icon="▥" title="The score needs time, not sample data" body="Complete a discussion, then wait for real market observations at each horizon. Zero scored rows is not zero accuracy." to="/debates"/>}
       <Card title="How have verdicts done?">
         <p className="text-sm text-neutral-600">{d.total_verdicts} verdicts logged, {d.scored_rows} horizon rows scored. {d.excluded_demo} demo calls excluded. Hits count direction only; excess return is vs Nifty. {d.note}</p>
         <table className="mt-3 w-full text-left text-sm"><thead className="text-neutral-600"><tr><th>Horizon</th><th>n</th><th>Hit rate</th><th>Avg excess</th></tr></thead>
