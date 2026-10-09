@@ -8,7 +8,7 @@ from typing import Any
 
 from .llm import BudgetExceeded, CostTracker
 
-AGENT_NAMES = ["researcher", "screener", "debater_bull", "debater_bear", "analyst", "executor_agent"]
+AGENT_NAMES = ["researcher", "screener", "debater_bull", "debater_bear", "analyst", "executor_agent", "risk_reviewer", "final_judge"]
 
 
 class Agent:
@@ -37,14 +37,25 @@ class Agent:
         try:
             self.costs.check(self.name)
             text, tokens = await self.llm.complete(system, prompt)
-            self.costs.add(self.name, tokens)
+            receipt = getattr(self.llm, "last_receipt", {})
+            self.costs.add(self.name, tokens, model="verified_free" if receipt.get("cost_usd") == 0 else "default")
             self.session["messages"] += [{"role": "user", "content": prompt[:500]},
                                          {"role": "assistant", "content": text[:500]}]
             self.session["messages"] = self.session["messages"][-20:]
             self.session["message_count"] += 2
             try:
-                return json.loads(text)
+                parsed = json.loads(text)
+                if getattr(self.llm, "last_receipt", None):
+                    if not isinstance(parsed, dict) or not isinstance(parsed.get("argument"), str) or not isinstance(parsed.get("evidence"), list) or any(not isinstance(e, str) for e in parsed["evidence"]):
+                        raise ValueError("Free role returned invalid argument schema")
+                    confidence = float(parsed.get("confidence"))
+                    if not 0 <= confidence <= 1:
+                        raise ValueError("Free role returned invalid confidence")
+                    parsed["confidence"] = confidence
+                return parsed
             except json.JSONDecodeError:
+                if getattr(self.llm, "last_receipt", None):
+                    raise ValueError("Free role returned malformed JSON; debate stopped") from None
                 return {"argument": text, "evidence": [], "confidence": 0.5}
         except BudgetExceeded:
             self.state = "rate_limited"

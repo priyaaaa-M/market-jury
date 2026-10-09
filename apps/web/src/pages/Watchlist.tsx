@@ -22,7 +22,7 @@ export default function Watchlist() {
       <Card title="Add symbol"><form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); if (sym) add.mutate(sym.toUpperCase()); setSym(""); }}>
         <input className="rounded bg-neutral-100 p-2 text-sm" placeholder="NSE symbol e.g. RELIANCE" value={sym} onChange={(e) => setSym(e.target.value)} /><Btn type="submit">Add</Btn></form></Card>
       <Card title="Batch">
-        <div className="flex gap-2">{ACTIONS.map((a) => <Btn key={a} onClick={() => run.mutate({ type: a, symbols: all })}>{a.toUpperCase()} ALL</Btn>)}</div>
+        <div className="flex flex-wrap gap-2">{ACTIONS.map((a) => <Btn key={a} onClick={() => run.mutate({ type: a, symbols: all })}>{a.toUpperCase()} ALL</Btn>)}</div>
         {msg && <p className="mt-2 text-sm text-neutral-900">{msg}</p>}
       </Card>
       <div className="grid gap-4 md:grid-cols-4">

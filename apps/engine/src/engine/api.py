@@ -166,9 +166,16 @@ def create_app(engine: Engine | None = None, api_key: str | None = None) -> Fast
                  limit: int = Query(200, ge=1, le=1000)) -> dict[str, Any]:
         return {"events": eng.store.events(event, since, until, limit)}
 
+    @app.get("/debate-progress", dependencies=dep)
+    def debate_progress():
+        return {"symbols": eng.debate_progress, "messages": eng.debate_messages, "team": "four_role_ai" if eng.four_role_team else "two_role_deterministic_judge",
+                "roles": {n: {"model": getattr(eng.agents[n].llm, "model", "offline_placeholder"),
+                              "state": eng.agents[n].state}
+                          for n in ("debater_bull", "debater_bear", "risk_reviewer", "final_judge")}}
+
     @app.get("/agents", dependencies=dep)
     def agents() -> dict[str, Any]:
-        return {n: {"state": a.state, "profile": {"events": len(a.history),
+        return {n: {"state": a.state, "model": getattr(a.llm, "model", "local deterministic"), "profile": {"events": len(a.history),
                                                    "tokens": eng.costs.agents[n]["tokens"]}}
                 for n, a in eng.agents.items()}
 

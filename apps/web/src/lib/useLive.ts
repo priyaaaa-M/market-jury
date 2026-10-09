@@ -19,7 +19,7 @@ export function useLive() {
       ws.onmessage = (m) => {
         const ev: LiveEvent = JSON.parse(m.data);
         setEvents((p) => [ev, ...p].slice(0, 200));
-        const keys = ["status", "portfolio", "pending", "cost", "agents"];
+        const keys = ["status", "debate-progress", "portfolio", "pending", "cost", "agents"];
         if (["consensus", "debate_started"].includes(ev.event)) keys.push("verdicts", "scoreboard", "consensus");
         if (["research", "analysis", "screen"].includes(ev.event)) keys.push("signals", "research");
         keys.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
