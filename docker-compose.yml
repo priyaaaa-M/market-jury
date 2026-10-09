@@ -1,0 +1,9 @@
+services:
+  engine:
+    build: ./apps/engine
+    env_file: .env
+    environment: { HOST: 0.0.0.0, DB_PATH: /data/engine.db }
+    volumes: ["engine-data:/data"]
+    ports: ["127.0.0.1:8008:8008"]
+volumes:
+  engine-data:
