@@ -9,7 +9,7 @@ from typing import Any
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .orchestrator import Engine
 
@@ -20,6 +20,27 @@ class TaskIn(BaseModel):
     type: str
     symbols: list[str] = []
 
+
+class RegimeContextIn(BaseModel):
+    as_of: str
+    source: str = Field(min_length=3, max_length=300)
+    breadth_pct: float | None = Field(default=None, ge=0, le=100)
+    fii_net_crore: float | None = None
+    dii_net_crore: float | None = None
+
+class RiskIn(BaseModel):
+    capital: float
+    risk_pct: float
+    entry: float
+    stop: float
+    target: float
+    side: str = "long"
+
+class JournalIn(BaseModel):
+    symbol: str = Field(min_length=1, max_length=30)
+    thesis: str = Field(min_length=1, max_length=2000)
+    invalidation: str = Field(min_length=1, max_length=1000)
+    review: str = Field(default="", max_length=2000)
 
 def create_app(engine: Engine | None = None, api_key: str | None = None) -> FastAPI:
     eng = engine or Engine(store=None)
@@ -114,7 +135,7 @@ def create_app(engine: Engine | None = None, api_key: str | None = None) -> Fast
 
     @app.get("/timeline", dependencies=dep)
     def timeline(event: str | None = None, since: str | None = None, until: str | None = None,
-                 limit: int = Query(200, le=1000)) -> dict[str, Any]:
+                 limit: int = Query(200, ge=1, le=1000)) -> dict[str, Any]:
         return {"events": eng.store.events(event, since, until, limit)}
 
     @app.get("/agents", dependencies=dep)
@@ -198,8 +219,57 @@ def create_app(engine: Engine | None = None, api_key: str | None = None) -> Fast
         return eng.scoreboard()
 
     @app.get("/verdicts", dependencies=dep)
-    def verdicts(symbol: str | None = None, limit: int = Query(100, le=1000)) -> dict[str, Any]:
+    def verdicts(symbol: str | None = None, limit: int = Query(100, ge=1, le=1000)) -> dict[str, Any]:
         return {"verdicts": eng.store.verdicts(symbol.upper() if symbol else None, limit)}
+
+    @app.post("/regime/context", dependencies=dep)
+    def set_regime_context(body: RegimeContextIn):
+        from datetime import date, datetime
+        from zoneinfo import ZoneInfo
+        try:
+            day = date.fromisoformat(body.as_of)
+            if day > datetime.now(ZoneInfo("Asia/Kolkata")).date(): raise ValueError("Future dates are not allowed")
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        eng.store.set("regime_context", body.model_dump())
+        return eng.current_regime()
+
+    @app.post("/risk-plan", dependencies=dep)
+    def plan(body: RiskIn):
+        from .workflow import risk_plan
+        try:
+            return risk_plan(**body.model_dump(), size_multiplier=eng.current_regime()["size_multiplier"])
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+
+    @app.get("/journal", dependencies=dep)
+    def journal():
+        return {"entries": eng.store.get("journal", [])}
+
+    @app.post("/journal", dependencies=dep)
+    def journal_add(body: JournalIn):
+        import uuid
+        from datetime import datetime, timezone
+        entries = eng.store.get("journal", [])
+        entry = {**body.model_dump(), "symbol": body.symbol.upper(),
+                 "id": uuid.uuid4().hex, "timestamp": datetime.now(timezone.utc).isoformat()}
+        entries.insert(0, entry)
+        eng.store.set("journal", entries[:1000])
+        return entry
+
+    @app.delete("/journal/{entry_id}", dependencies=dep)
+    def journal_delete(entry_id: str):
+        entries = eng.store.get("journal", [])
+        eng.store.set("journal", [e for e in entries if e["id"] != entry_id])
+        return {"ok": True}
+
+    @app.get("/public/scoreboard")
+    def public_scoreboard():
+        # Opt-in, read-only aggregate export. Never expose account, journal or holdings.
+        if os.getenv("PUBLIC_SCOREBOARD") != "true":
+            raise HTTPException(404, "Public scoreboard disabled")
+        result = eng.scoreboard()
+        return {k: v for k,v in result.items() if k != "outcomes"}
 
     @app.websocket("/ws")
     async def ws(sock: WebSocket, token: str = "") -> None:

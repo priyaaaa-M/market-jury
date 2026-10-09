@@ -86,6 +86,16 @@ def approve_paper_trade(index: int) -> dict:
     return _call("POST", f"/trade/approve/{index}")
 
 
+@mcp.tool()
+def get_journal() -> dict:
+    """Private research journal. Do not share without the owner permission."""
+    return _call("GET", "/journal")
+
+@mcp.tool()
+def calculate_risk_plan(capital: float, risk_pct: float, entry: float, stop: float, target: float, side: str = "long") -> dict:
+    """Educational equity-only position sizing. Does not place or protect an order."""
+    return _call("POST", "/risk-plan", json={"capital": capital, "risk_pct": risk_pct, "entry": entry, "stop": stop, "target": target, "side": side})
+
 @mcp.resource("market://regime")
 def regime_resource() -> str:
     return str(_call("GET", "/regime"))

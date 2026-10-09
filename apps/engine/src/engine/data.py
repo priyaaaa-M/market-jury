@@ -1,84 +1,90 @@
-"""Market data adapters. SimulatedData is deterministic and needs no network."""
+"""Explicit data provenance. Real-data failures never become synthetic observations."""
 from __future__ import annotations
 
 import hashlib
 import math
-import random
-from datetime import datetime, timezone
+import os
+from datetime import date, datetime, timedelta, timezone
 from typing import Protocol
 
 DEFAULT_UNIVERSE = ["RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK", "LUPIN", "SBIN", "ITC"]
-
-
 class MarketData(Protocol):
+    source: str
     def quote(self, symbol: str) -> dict: ...
     def history(self, symbol: str, days: int = 60) -> list[float]: ...
     def index_series(self, name: str, days: int = 60) -> list[float]: ...
-    def price_on(self, symbol: str, when: datetime) -> float | None: ...
-
+    def daily_bars(self, symbol: str, start: date, end: date) -> list[dict]: ...
 
 def _seed(*parts: str) -> int:
     return int(hashlib.sha256("|".join(parts).encode()).hexdigest()[:12], 16)
 
-
 class SimulatedData:
-    """Seeded random walks. Same symbol and day always give the same series."""
-
+    source = "simulated"
     BASE = {"NIFTY": 24000.0, "INDIAVIX": 14.0}
-
-    def _series(self, key: str, days: int, start: float, vol: float) -> list[float]:
-        today = datetime.now(timezone.utc).date().toordinal()
-        rng = random.Random(_seed(key))
-        px, out = start, []
-        for _ in range(days + 500):
-            px *= math.exp(rng.gauss(0.0003, vol))
-            out.append(px)
-        # shift window with the calendar so "today" moves, deterministically
-        end = 400 + (today % 50)
-        return out[end - days: end]
-
+    def _price(self, symbol: str, day: date) -> float:
+        # Stable across requested window lengths and restarts, unlike a moving seeded walk.
+        base = self.BASE.get(symbol, 200 + _seed(symbol) % 3000)
+        offset = day.toordinal() - date(2026, 1, 1).toordinal()
+        phase = (_seed(symbol) % 100) / 10
+        return round(base * math.exp(.0003 * offset + .06 * math.sin(offset / 12 + phase)), 2)
+    def daily_bars(self, symbol: str, start: date, end: date) -> list[dict]:
+        out = []
+        while start <= end:
+            if start.weekday() < 5:
+                out.append({"date": start.isoformat(), "close": self._price(symbol, start)})
+            start += timedelta(days=1)
+        return out
     def history(self, symbol: str, days: int = 60) -> list[float]:
-        start = 200 + (_seed(symbol) % 3000)
-        return [round(p, 2) for p in self._series(symbol, days, float(start), 0.015)]
-
+        today = datetime.now(timezone.utc).date()
+        return [x["close"] for x in self.daily_bars(symbol, today-timedelta(days=days*2+10), today)][-days:]
     def index_series(self, name: str, days: int = 60) -> list[float]:
-        vol = 0.004 if name == "NIFTY" else 0.04
-        return [round(p, 2) for p in self._series(name, days, self.BASE.get(name, 100.0), vol)]
-
+        return self.history(name, days)
     def quote(self, symbol: str) -> dict:
         h = self.history(symbol, 2)
         return {"symbol": symbol, "price": h[-1], "volume": 100000 + _seed(symbol) % 900000,
-                "timestamp": datetime.now(timezone.utc).isoformat(), "exchange": "NSE",
-                "extra": {"prev_close": h[0]}}
-
+                "timestamp": datetime.now(timezone.utc).isoformat(), "exchange": "DEMO",
+                "data_source": self.source, "extra": {"prev_close": h[0]}}
     def price_on(self, symbol: str, when: datetime) -> float | None:
-        age = (datetime.now(timezone.utc) - when).days
-        if age < 0 or age > 50:
-            return None
-        series = self.history(symbol, age + 1)
-        return series[0]
-
+        return self._price(symbol, when.date()) if when.date().weekday() < 5 else None
 
 class YahooData(SimulatedData):
-    """Optional: pip install 'engine[yahoo]'. Falls back to simulated data on any error."""
-
+    """Delayed daily bars for research, not execution. Requires yfinance. No demo fallback."""
+    source = "yahoo_delayed"
     def __init__(self) -> None:
-        import yfinance  # noqa: F401  (import check)
+        import yfinance  # noqa: F401
+        self.cache = {}
+    def daily_bars(self, symbol: str, start: date, end: date) -> list[dict]:
+        import time
 
-    def _yf(self, ticker: str, days: int) -> list[float]:
         import yfinance as yf
-        df = yf.Ticker(ticker).history(period=f"{max(days, 5)}d")
-        return [float(x) for x in df["Close"].tolist()][-days:]
-
+        ticker = {"NIFTY": "^NSEI", "INDIAVIX": "^INDIAVIX"}.get(symbol, f"{symbol}.NS")
+        key = (ticker, start, end)
+        if key in self.cache and time.monotonic()-self.cache[key][0] < 300:
+            return self.cache[key][1]
+        try:
+            df = yf.Ticker(ticker).history(start=start.isoformat(), end=(end+timedelta(days=1)).isoformat(), auto_adjust=True)
+            bars = [{"date": i.date().isoformat(), "close": float(r["Close"])} for i,r in df.iterrows()]
+        except Exception as e:
+            raise ValueError(f"Market data unavailable for {symbol}; no simulated fallback") from e
+        if not bars:
+            raise ValueError(f"Market data unavailable for {symbol}; no simulated fallback")
+        self.cache[key] = (time.monotonic(), bars)
+        return bars
     def history(self, symbol: str, days: int = 60) -> list[float]:
-        try:
-            return self._yf(f"{symbol}.NS", days) or super().history(symbol, days)
-        except Exception:
-            return super().history(symbol, days)
+        today = datetime.now(timezone.utc).date()
+        return [x["close"] for x in self.daily_bars(symbol, today-timedelta(days=days*2+15), today)][-days:]
+    def quote(self, symbol: str) -> dict:
+        today = datetime.now(timezone.utc).date()
+        bars = self.daily_bars(symbol, today-timedelta(days=15), today)
+        return {"symbol": symbol, "price": bars[-1]["close"], "volume": None,
+                "timestamp": bars[-1]["date"], "exchange": "NSE", "data_source": self.source,
+                "extra": {"prev_close": bars[-2]["close"] if len(bars)>1 else bars[-1]["close"]}}
+    def price_on(self, symbol: str, when: datetime) -> float | None:
+        bars = self.daily_bars(symbol, when.date(), when.date())
+        return bars[0]["close"] if bars else None
 
-    def index_series(self, name: str, days: int = 60) -> list[float]:
-        ticker = {"NIFTY": "^NSEI", "INDIAVIX": "^INDIAVIX"}.get(name)
-        try:
-            return self._yf(ticker, days) if ticker else super().index_series(name, days)
-        except Exception:
-            return super().index_series(name, days)
+def data_from_env():
+    mode = os.getenv("MARKET_DATA_MODE", "simulated")
+    if mode == "simulated": return SimulatedData()
+    if mode == "yahoo": return YahooData()
+    raise ValueError("MARKET_DATA_MODE must be simulated or yahoo")

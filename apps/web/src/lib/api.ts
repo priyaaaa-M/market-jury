@@ -20,6 +20,6 @@ export const post = <T = any>(path: string, body?: unknown) =>
 export function wsUrl(): string {
   const base = import.meta.env.VITE_API_URL
     ? import.meta.env.VITE_API_URL.replace(/^http/, "ws")
-    : `${location.protocol === "https:" ? "wss" : "ws"}://${location.hostname}:8008`;
+    : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/api`;
   return `${base}/ws?token=${encodeURIComponent(getKey())}`;
 }

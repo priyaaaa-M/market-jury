@@ -39,6 +39,7 @@ class Config:
         return self.values[key]
 
     def update(self, patch: dict[str, Any]) -> dict[str, Any]:
+        updates = {}
         for key, value in patch.items():
             if key not in DEFAULTS:
                 raise KeyError(f"unknown config key: {key}")
@@ -47,5 +48,14 @@ class Config:
                 value = float(value)
             if not isinstance(value, expected):
                 raise TypeError(f"{key} expects {expected.__name__}")
-            self.values[key] = value
+            if key in ("AGENT_DEBATE_ROUNDS",) and not 1 <= value <= 5:
+                raise TypeError("Debate rounds must be 1-5")
+            if key == "AGENT_MIN_CONFIDENCE" and not 0 <= value <= 1:
+                raise TypeError("Confidence must be 0-1")
+            if expected is float:
+                import math
+                if not math.isfinite(value) or value < 0:
+                    raise TypeError("Numeric settings must be finite and non-negative")
+            updates[key] = value
+        self.values.update(updates)
         return self.values

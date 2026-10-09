@@ -12,7 +12,7 @@ from .agents import AGENT_NAMES, Agent, judge, momentum, volatility
 from .broker import PaperBroker
 from .bus import EventBus
 from .config import PAPER_ONLY, Config
-from .data import DEFAULT_UNIVERSE, MarketData, SimulatedData
+from .data import DEFAULT_UNIVERSE, MarketData, data_from_env
 from .llm import BudgetExceeded, CostTracker, llm_from_env
 from .scheduler import current_phase, market_open
 from .store import Store
@@ -26,7 +26,7 @@ class Engine:
                  llm=None, cfg: Config | None = None) -> None:
         self.cfg = cfg or Config()
         self.store = store or Store()
-        self.data = data or SimulatedData()
+        self.data = data or data_from_env()
         self.bus = EventBus()
         self.bus.subscribe(self.store.add_event)
         self.costs = CostTracker(self.cfg)
@@ -64,7 +64,7 @@ class Engine:
         phase = current_phase()
         return {"master_state": "running" if self.active_debates else "idle", "phase": phase,
                 "market_open": market_open(), "active_debates": sorted(self.active_debates),
-                "paper_only": PAPER_ONLY,
+                "paper_only": PAPER_ONLY, "data_source": self.data.source,
                 "agents": {n: {"state": a.state} for n, a in self.agents.items()},
                 "cost": self.costs.report()}
 
@@ -73,7 +73,8 @@ class Engine:
 
     def current_regime(self) -> dict[str, Any]:
         return regime_mod.classify(self.data.index_series("NIFTY", 60),
-                                   self.data.index_series("INDIAVIX", 30))
+                                   self.data.index_series("INDIAVIX", 30),
+                                   context=self.store.get("regime_context", {}), source=self.data.source)
 
     # pipeline steps
     def _gate(self) -> None:
@@ -142,6 +143,9 @@ class Engine:
                        "reasoning": (f"Bull {res['bull_score']} vs bear {res['bear_score']} "
                                      f"after {self.cfg.get('AGENT_DEBATE_ROUNDS')} rounds; regime {reg['regime']}."),
                        "entry_price": hist[-1],
+                       "audit": {"data_source": self.data.source, "regime_snapshot": reg,
+                                 "model": getattr(bull_a.llm, "model", "offline_placeholder"),
+                                 "evaluation": "first_complete_session_close_after_call"},
                        "timestamp": datetime.now(timezone.utc).isoformat()}
             self.store.add_verdict(verdict)
             self.consensus[symbol] = verdict
@@ -189,10 +193,14 @@ class Engine:
         return trade
 
     async def approve(self, idx: int) -> dict:
-        sig = self.pending.pop(idx)
-        return await self._execute(sig)
+        if idx < 0: raise IndexError(idx)
+        sig = self.pending[idx]
+        trade = await self._execute(sig)
+        self.pending.pop(idx)
+        return trade
 
     def reject(self, idx: int) -> dict:
+        if idx < 0: raise IndexError(idx)
         return self.pending.pop(idx)
 
     async def close_position(self, symbol: str) -> dict:
@@ -230,7 +238,7 @@ class Engine:
         return task_id
 
     def scoreboard(self) -> dict[str, Any]:
-        return scoreboard.evaluate(self.data, self.store.verdicts(limit=2000))
+        return scoreboard.evaluate(self.data, self.store.verdicts(limit=None))
 
     def hard_reset(self) -> None:
         self.store.reset()

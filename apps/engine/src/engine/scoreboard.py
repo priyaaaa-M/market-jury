@@ -1,63 +1,67 @@
-"""Verdict accountability (phase 2). Forward returns vs Nifty for every logged verdict."""
+"""Forward daily-close research outcomes. Never report demo results as real accuracy."""
 from __future__ import annotations
 
-from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 HORIZONS = (1, 5, 20)
 BULLISH = {"buy", "strong_buy"}
 BEARISH = {"sell", "strong_sell"}
 
-
-def _forward(data, v: dict, horizon: int) -> dict[str, float] | None:
-    when = datetime.fromisoformat(v["timestamp"])
-    if when.tzinfo is None:
-        when = when.replace(tzinfo=timezone.utc)
-    age = (datetime.now(timezone.utc) - when).days
-    if age < horizon or not v.get("entry_price"):
-        return None
-    later = data.price_on(v["symbol"], datetime.fromtimestamp(
-        when.timestamp() + horizon * 86400, tz=timezone.utc))
-    if later is None:
-        return None
-    ret = later / v["entry_price"] - 1
-    n0 = data.price_on("NIFTY", when)
-    n1 = data.price_on("NIFTY", datetime.fromtimestamp(when.timestamp() + horizon * 86400, tz=timezone.utc))
-    bench = (n1 / n0 - 1) if n0 and n1 else 0.0
-    return {"ret": ret, "excess": ret - bench}
-
-
-def evaluate(data, verdicts: list[dict]) -> dict[str, Any]:
-    """Return hit rates and average excess return by horizon, verdict, agent-set and regime."""
-    rows = []
+def evaluate(data, verdicts: list[dict], now: datetime | None = None) -> dict[str, Any]:
+    today = (now or datetime.now(ZoneInfo("Asia/Kolkata"))).astimezone(ZoneInfo("Asia/Kolkata")).date()
+    rows, outcomes = [], []
     for v in verdicts:
-        if v["verdict"] == "hold":
-            continue
-        sign = 1 if v["verdict"] in BULLISH else -1
-        for h in HORIZONS:
-            f = _forward(data, v, h)
-            if f:
-                rows.append({"h": h, "regime": v.get("regime") or "unknown",
-                             "verdict": v["verdict"], "conf": v["confidence"],
-                             "hit": f["ret"] * sign > 0, "excess": f["excess"] * sign})
-
-    def agg(sel) -> dict[str, Any]:
-        xs = [r for r in rows if sel(r)]
-        if not xs:
-            return {"n": 0}
-        return {"n": len(xs), "hit_rate": round(sum(r["hit"] for r in xs) / len(xs), 3),
-                "avg_excess_return": round(sum(r["excess"] for r in xs) / len(xs), 4)}
-
-    by_h = {h: agg(lambda r, h=h: r["h"] == h) for h in HORIZONS}
-    regimes = sorted({r["regime"] for r in rows})
-    by_regime = {g: {h: agg(lambda r, g=g, h=h: r["regime"] == g and r["h"] == h)
-                     for h in HORIZONS} for g in regimes}
-    buckets: dict[str, list] = defaultdict(list)
-    for r in rows:
-        buckets[f"{int(r['conf'] * 10) * 10}%+"].append(r)
-    calibration = {k: {"n": len(x), "hit_rate": round(sum(r["hit"] for r in x) / len(x), 3)}
-                   for k, x in sorted(buckets.items())}
-    return {"total_verdicts": len(verdicts), "scored_rows": len(rows), "by_horizon": by_h,
-            "by_regime": by_regime, "calibration": calibration,
-            "note": "Forward returns need elapsed days. Simulated data is for demos only."}
+        audit = v.get("audit", {})
+        source = audit.get("data_source", "unknown")
+        # Baseline is first full session AFTER call, not a close known before the call.
+        call_date = datetime.fromisoformat(v["timestamp"]).astimezone(ZoneInfo("Asia/Kolkata")).date()
+        record = {"id": v.get("id"), "symbol": v["symbol"], "verdict": v["verdict"],
+                  "data_source": source, "horizons": {}}
+        if source == "simulated" or getattr(data, "source", "unknown") == "simulated":
+            record["status"] = "demo_excluded"
+        elif source == "unknown" or source != data.source:
+            record["status"] = "unverified_source"
+        else:
+            record["status"] = "waiting"
+            if call_date + timedelta(days=1) > today-timedelta(days=1):
+                record["horizons"] = {h: {"status": "waiting"} for h in HORIZONS}
+                outcomes.append(record)
+                continue
+            try:
+                bars = data.daily_bars(v["symbol"], call_date+timedelta(days=1), today-timedelta(days=1))
+                benchmark = {b["date"]: b["close"] for b in data.daily_bars("NIFTY", call_date+timedelta(days=1), today-timedelta(days=1))}
+                # Shared observed sessions handle holidays; do not guess NSE dates.
+                common = [b for b in bars if b["date"] in benchmark]
+                for h in HORIZONS:
+                    if len(common) <= h:
+                        record["horizons"][h] = {"status": "waiting"}; continue
+                    first, last = common[0], common[h]
+                    raw = last["close"] / first["close"] - 1
+                    bench = benchmark[last["date"]] / benchmark[first["date"]] - 1
+                    sign = 1 if v["verdict"] in BULLISH else -1
+                    f = {"status": "scored", "start_date": first["date"], "end_date": last["date"],
+                         "start_close": first["close"], "end_close": last["close"],
+                         "stock_return": raw, "benchmark_return": bench,
+                         "directional_excess": (raw-bench)*sign if v["verdict"] != "hold" else None}
+                    record["horizons"][h] = f
+                    if v["verdict"] != "hold":
+                        rows.append({"h": h, "regime": v.get("regime", "unknown"),
+                                     "confidence": v["confidence"], "hit": raw*sign > 0,
+                                     "excess": (raw-bench)*sign})
+                    record["status"] = "scored" if v["verdict"] != "hold" else "hold_tracked"
+            except (ValueError, RuntimeError):
+                record["status"] = "data_unavailable"
+        outcomes.append(record)
+    def agg(xs):
+        return {"n": len(xs), **({"hit_rate": round(sum(r["hit"] for r in xs)/len(xs),3),
+               "avg_excess_return": round(sum(r["excess"] for r in xs)/len(xs),4)} if xs else {})}
+    return {"total_verdicts": len(verdicts), "scored_rows": len(rows),
+            "excluded_demo": sum(o["status"] == "demo_excluded" for o in outcomes),
+            "by_horizon": {h: agg([r for r in rows if r["h"]==h]) for h in HORIZONS},
+            "by_regime": {g: {h: agg([r for r in rows if r["regime"]==g and r["h"]==h]) for h in HORIZONS}
+                          for g in sorted({r["regime"] for r in rows})},
+            "calibration": {f"{b*10}%+": agg([r for r in rows if r["h"]==5 and int(r["confidence"]*10)==b]) for b in range(10) if any(r["h"]==5 and int(r["confidence"]*10)==b for r in rows)},
+            "outcomes": outcomes,
+            "note": "Observed trading sessions, first full session close after call. Demo/legacy unknown data excluded. Holds tracked but not directional hits. Gross research returns, not realised P&L; confidence is a heuristic, not a probability."}

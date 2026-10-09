@@ -13,9 +13,10 @@ import Timeline from "./pages/Timeline";
 import Settings from "./pages/Settings";
 import Scoreboard from "./pages/Scoreboard";
 import Regime from "./pages/Regime";
+import Workbench from "./pages/Workbench";
 
 const NAV = [["/", "Overview"], ["/portfolio", "Portfolio"], ["/debates", "Debates"], ["/agents", "Agents"],
-  ["/watchlist", "Watchlist"], ["/timeline", "Timeline"], ["/scoreboard", "Scoreboard"], ["/regime", "Regime"], ["/settings", "Settings"]];
+  ["/watchlist", "Watchlist"], ["/timeline", "Timeline"], ["/scoreboard", "Scoreboard"], ["/regime", "Regime"], ["/workbench", "Workbench"], ["/settings", "Settings"]];
 
 function KeyGate({ onSet }: { onSet: () => void }) {
   const [v, setV] = useState("");
@@ -23,7 +24,8 @@ function KeyGate({ onSet }: { onSet: () => void }) {
     <div className="mx-auto mt-24 max-w-sm space-y-3 p-4">
       <h1 className="text-xl font-semibold">Enter engine API key</h1>
       <p className="text-sm text-slate-400">Printed in the engine log at startup, or set via API_KEY.</p>
-      <input className="w-full rounded bg-slate-800 p-2" value={v} onChange={(e) => setV(e.target.value)} type="password" />
+      <label htmlFor="api-key" className="block text-sm">Engine API key</label>
+      <input id="api-key" className="w-full rounded bg-slate-800 p-2" value={v} onChange={(e) => setV(e.target.value)} type="password" />
       <button className="rounded bg-emerald-700 px-4 py-2" onClick={() => { setKey(v); onSet(); }}>Connect</button>
     </div>
   );
@@ -40,9 +42,10 @@ function Shell() {
   const status = useQuery({ queryKey: ["status"], queryFn: () => api("/status") });
   return (
     <div className="min-h-screen">
+      <a className="skip-link" href="#main">Skip to content</a>
       <header className="flex flex-wrap items-center gap-4 border-b border-slate-800 px-4 py-2">
         <b>market-jury</b>
-        <nav className="flex flex-wrap gap-3 text-sm">
+        <nav aria-label="Main navigation" className="flex flex-wrap gap-3 text-sm">
           {NAV.map(([to, l]) => (
             <NavLink key={to} to={to} end className={({ isActive }) => (isActive ? "text-emerald-400" : "text-slate-400 hover:text-slate-200")}>{l}</NavLink>
           ))}
@@ -50,16 +53,20 @@ function Shell() {
         <div className="ml-auto flex items-center gap-3 text-xs text-slate-400">
           <span>phase: {status.data?.phase ?? "…"}</span>
           <span className="rounded bg-amber-900 px-2 py-0.5 text-amber-200">PAPER ONLY</span>
-          <span className={connected ? "text-emerald-400" : "text-rose-400"}>{connected ? "live" : "offline"}</span>
+          <span className={connected ? "text-emerald-400" : "text-rose-400"}>{connected ? "engine connected" : "engine disconnected"}</span>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl space-y-4 p-4">
+      <div role="status" className="border-b border-amber-800 bg-amber-950 px-4 py-3 text-sm text-amber-100">
+        {status.data?.data_source === "simulated" ? "DEMO DATA: synthetic prices and offline arguments. Not real market calls." : `Data: ${status.data?.data_source ?? "checking connection"}. Research only, not execution prices.`}
+      </div>
+      {status.isError && <div role="alert" className="p-4 text-rose-200">{String(status.error)}. Check the engine and API key. <button onClick={() => {localStorage.removeItem("engine_api_key"); location.reload();}}>Change key</button></div>}
+      <main id="main" tabIndex={-1} className="mx-auto max-w-6xl space-y-4 p-4">
         <Routes>
           <Route path="/" element={<Overview />} /><Route path="/portfolio" element={<Portfolio />} />
           <Route path="/debates" element={<Debates />} /><Route path="/agents" element={<Agents />} />
           <Route path="/watchlist" element={<Watchlist />} /><Route path="/timeline" element={<Timeline />} />
           <Route path="/scoreboard" element={<Scoreboard />} /><Route path="/regime" element={<Regime />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/workbench" element={<Workbench />} /><Route path="/settings" element={<Settings />} />
         </Routes>
         <p className="pt-6 text-xs text-slate-500">Not investment advice. Paper trading only. Past verdicts do not predict future results.</p>
       </main>

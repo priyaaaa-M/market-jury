@@ -1,0 +1,48 @@
+# Run it locally
+
+Requires Python 3.10+, Node.js 22.12+ and npm. No broker or LLM account is required for the demo. Internet is needed once to install dependencies.
+
+## One command (Linux/macOS)
+From the cloned repository:
+```bash
+./scripts/start-demo.sh
+```
+Open http://localhost:5173 and enter the random local key printed in the terminal. The script creates `.venv`, installs both Python packages and web dependencies, starts both servers and stops them on Ctrl+C. It deliberately unsets inherited LLM keys, forces simulated data, permits out-of-hours demo requests and keeps paper auto-execution off. Do not treat its calls as real recommendations.
+
+## Manual / Windows
+```bash
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# macOS/Linux: source .venv/bin/activate
+pip install -e 'apps/engine[dev]' -e packages/mcp-server
+```
+Set `API_KEY` to your own strong local secret, `MARKET_DATA_MODE=simulated`, `AGENT_FORCE_ACTIVE=true`. Start `python -m engine`. In a second terminal:
+```bash
+cd apps/web
+npm ci
+npm run dev
+```
+The engine reads environment variables; it does NOT automatically load a .env file. `.env.example` is a configuration reference. Docker Compose loads `.env` explicitly, but its provided service is engine-only. Never publish .env or share your local key.
+
+## Optional delayed daily data
+```bash
+pip install -e 'apps/engine[yahoo]'
+```
+Set `MARKET_DATA_MODE=yahoo` before starting the engine. Missing data raises an error, never synthetic fallback. This uses delayed adjusted daily bars, not licensed real-time NSE execution data. Provider availability, adjustments and usage rights need review before deployment. Research still uses offline placeholder arguments unless you explicitly configure an LLM; paid LLM usage is optional and not part of the demo.
+
+## MCP for Claude Desktop / Cursor / other stdio clients
+Run the engine first. Generate a config with absolute executable paths:
+```bash
+python scripts/mcp-config.py
+```
+Copy its JSON to your client's MCP settings and replace the engine key LOCALLY. Use the same Python environment used to install `engine-mcp`; on Windows it is `.venv\Scripts\engine-mcp.exe`. Tools include verdict/history/scoreboard/regime, risk planning and journal reads. Restart the client. Paper approval is disabled by default in MCP. Never send engine keys in chat or publish client configs with secrets.
+
+Tested: real MCP stdio handshake/list/tools calls. Not tested inside Claude Desktop or Cursor.
+
+## Sharing with everyone
+The repository is open source; anyone can clone and run their own isolated instance. This change does not deploy a public website. The authenticated API exposes private holdings/journal data; NEVER publish the whole engine, a shared API key or Vite development server to the internet.
+
+For a future hardened self-hosted instance, `PUBLIC_SCOREBOARD=true` enables unauthenticated `GET /public/scoreboard` with aggregates only. It excludes journal, portfolio and individual outcomes. Default is off. Use HTTPS and a reverse proxy that exposes only that route to public readers, and review aggregation privacy. Enabling this does not make the entire app safe for multi-user hosting.
+
+## Accessibility
+Responsive navigation, labeled planning/context inputs, keyboard focus indicator, skip-to-content, reduced-motion support and text labels alongside color. Desktop and 390px mobile overview visually checked. This is not a WCAG audit or a claim of full multilingual accessibility.

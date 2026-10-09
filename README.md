@@ -9,26 +9,26 @@ Multi-agent research and **paper-trading** copilot for Indian equities. AI agent
 - Live dashboard: Overview, Portfolio, Debates, Agents, Watchlist, Timeline, Scoreboard, Regime, Settings
 - Manual approval or paper auto-execute; fees and slippage modelled; shorts supported
 - Per-agent LLM budgets, any OpenAI-compatible provider, runs offline with placeholders
-- IST market phases and NSE trading-day logic
+- IST market phases and weekday gating (exchange holiday calendar not yet integrated)
 - API-key auth, WebSocket push, SQLite persistence
 - MCP server: `get_market_regime`, `run_debate`, `get_verdict`, `get_verdict_history`, `get_scoreboard`, `get_portfolio`, `screen` and more
 
-## Quick start
+## Quick start (free offline demo)
 ```bash
-cp .env.example .env            # set API_KEY, optionally LLM_API_KEY
-make engine                     # http://127.0.0.1:8008
-make web                        # http://localhost:5173 (enter your API key)
-make mcp                        # stdio MCP server for Claude/Cursor
+./scripts/start-demo.sh
 ```
-Outside market hours set `AGENT_FORCE_ACTIVE=true` (Settings page). Data is simulated unless you install `engine[yahoo]`.
+Python 3.10+ and Node.js 22.12+ required. Open http://localhost:5173 and enter the random LOCAL key printed by the script. No broker or LLM key is needed. All prices and arguments are demo-only; calls are excluded from measured accuracy.
 
-Claude Desktop MCP config:
-```json
-{"mcpServers": {"market-jury": {"command": "engine-mcp",
-  "env": {"ENGINE_URL": "http://127.0.0.1:8008", "ENGINE_API_KEY": "your-key"}}}}
-```
+See [setup and MCP instructions](docs/setup.md) for Windows/manual setup, optional delayed Yahoo bars, client configuration and privacy-safe sharing. Installing the Yahoo extra alone does NOT enable it: set `MARKET_DATA_MODE=yahoo`. Real-data failure never silently falls back to synthetic observations.
 
-See [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md), [docs/roadmap.md](docs/roadmap.md). Licensed MIT.
+## Phase 2 additions
+- Per-call provenance and regime snapshot; observed 1/5/20-session outcomes vs Nifty; demo/unknown calls excluded; holds tracked separately.
+- Date-tagged manual breadth/FII/DII context with missing/stale warnings; thresholds are heuristics.
+- Equity risk planner, private thesis/invalidation/review journal and JSON export.
+- MCP planner/journal tools, one-command demo, absolute-path config generator, responsive/keyboard UI.
+- Opt-in aggregate-only `/public/scoreboard`, off by default. This is not a hosted public app.
+
+[Trader workflow research](docs/trader-research.md) · [API](docs/api.md) · [Remaining work](docs/roadmap.md)
 
 ## CI
 A GitHub Actions workflow is in `docs/ci.yml.example`. Copy it to `.github/workflows/ci.yml` to enable lint, tests and the web build.

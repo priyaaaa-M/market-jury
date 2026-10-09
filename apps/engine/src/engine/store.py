@@ -25,6 +25,10 @@ class Store:
         self.db = sqlite3.connect(path, check_same_thread=False)
         self.db.row_factory = sqlite3.Row
         self.db.executescript(SCHEMA)
+        columns = {r[1] for r in self.db.execute("PRAGMA table_info(verdicts)")}
+        if "audit" not in columns:
+            self.db.execute("ALTER TABLE verdicts ADD COLUMN audit TEXT")
+            self.db.commit()
 
     def _run(self, sql: str, args: tuple = ()) -> list[sqlite3.Row]:
         with self._lock:
@@ -56,7 +60,9 @@ class Store:
             sql += " AND time>=?"; args.append(since)
         if until:
             sql += " AND time<=?"; args.append(until)
-        sql += " ORDER BY id DESC LIMIT ?"; args.append(limit)
+        sql += " ORDER BY id DESC"
+        if limit is not None:
+            sql += " LIMIT ?"; args.append(limit)
         return [{"event": r["event"], "time": r["time"], "data": json.loads(r["data"])}
                 for r in self._run(sql, tuple(args))]
 
@@ -84,18 +90,23 @@ class Store:
              v["bear_score"], v["reasoning"], v.get("entry_price"), v.get("regime"),
              json.dumps(v.get("positions", []))),
         )
-        return self._run("SELECT last_insert_rowid() AS i")[0]["i"]
+        vid = self._run("SELECT last_insert_rowid() AS i")[0]["i"]
+        self._run("UPDATE verdicts SET audit=? WHERE id=?", (json.dumps(v.get("audit", {})), vid))
+        return vid
 
-    def verdicts(self, symbol: str | None = None, limit: int = 500) -> list[dict[str, Any]]:
+    def verdicts(self, symbol: str | None = None, limit: int | None = 500) -> list[dict[str, Any]]:
         sql, args = "SELECT * FROM verdicts", []
         if symbol:
             sql += " WHERE symbol=?"; args.append(symbol)
-        sql += " ORDER BY id DESC LIMIT ?"; args.append(limit)
+        sql += " ORDER BY id DESC"
+        if limit is not None:
+            sql += " LIMIT ?"; args.append(limit)
         out = []
         for r in self._run(sql, tuple(args)):
             d = dict(r)
             d["timestamp"] = d.pop("time")
             d["positions"] = json.loads(d["positions"] or "[]")
+            d["audit"] = json.loads(d.get("audit") or "{}")
             out.append(d)
         return out
 

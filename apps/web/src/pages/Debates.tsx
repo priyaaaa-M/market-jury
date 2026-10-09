@@ -16,7 +16,7 @@ export default function Debates() {
       {v.data && (
         <>
           <Card title={`${v.data.symbol} verdict`}>
-            <div className="flex items-center gap-4"><Verdict v={v.data.verdict} /><span>{Math.round(v.data.confidence * 100)}% confidence</span>
+            <div className="flex flex-wrap items-center gap-4"><Verdict v={v.data.verdict} /><span>{Math.round(v.data.confidence * 100)}% confidence</span>
               <span className="text-slate-400">bull {v.data.bull_score} vs bear {v.data.bear_score}</span><span className="text-slate-400">regime {v.data.regime}</span></div>
             <p className="mt-2 text-sm text-slate-300">{v.data.reasoning}</p>
           </Card>
