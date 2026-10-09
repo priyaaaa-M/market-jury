@@ -45,6 +45,7 @@ def evaluate(data, verdicts: list[dict], now: datetime | None = None) -> dict[st
                          "start_close": first["close"], "end_close": last["close"],
                          "stock_return": raw, "benchmark_return": bench,
                          "directional_excess": (raw-bench)*sign if v["verdict"] != "hold" else None}
+                    f["directional_hit"] = raw*sign > 0 if v["verdict"] != "hold" else None
                     record["horizons"][h] = f
                     if v["verdict"] != "hold":
                         rows.append({"h": h, "regime": v.get("regime", "unknown"),

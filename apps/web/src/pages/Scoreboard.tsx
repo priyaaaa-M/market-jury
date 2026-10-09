@@ -1,3 +1,4 @@
+import Accountability from "../components/Accountability";
 import { PageIntro, Metric, EmptyState } from "../components/PageIntro";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
@@ -29,6 +30,7 @@ export default function Scoreboard() {
         <table className="w-full text-left text-sm"><tbody>{Object.entries(d.calibration).map(([b, v]: any) => (
           <tr key={b} className="border-t border-neutral-200"><td>{b}</td><td>{v.n}</td><td>{pct(v.hit_rate)}</td></tr>))}</tbody></table>
       </Card>
+      <Accountability/>
       <Card title="Per-call audit trail">
         <p className="text-sm text-neutral-700">Every call stays visible, including holds and calls waiting for enough real observations.</p>
         <div className="overflow-x-auto"><table className="mt-3 w-full text-left text-sm"><thead><tr><th>Symbol</th><th>Verdict</th><th>Source</th><th>Outcome status</th></tr></thead><tbody>{(d.outcomes??[]).map((v:any)=><tr key={v.id} className="border-t border-neutral-300"><td>{v.symbol}</td><td>{v.verdict}</td><td>{v.data_source}</td><td>{v.status}</td></tr>)}</tbody></table></div>

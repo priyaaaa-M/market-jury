@@ -233,6 +233,7 @@ class Engine:
                                      f"after {self.cfg.get('AGENT_DEBATE_ROUNDS')} rounds; regime {reg['regime']}."),
                        "entry_price": hist[-1],
                        "audit": {"data_source": self.data.source, "regime_snapshot": reg,
+                                 "input_snapshot": {"quote": quote, "momentum": m, "history_count": len(hist), "missing_inputs": ["fundamentals", "news"]},
                                  "model": "four_role_ai" if self.four_role_team else getattr(bull_a.llm, "model", "offline_placeholder"),
                                  "team": "four_role_ai" if self.four_role_team else "two_role_deterministic_judge",
                                  "models": {p["agent_name"]: p.get("model") for p in positions},

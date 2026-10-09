@@ -41,6 +41,14 @@ class RiskIn(BaseModel):
     target: float
     side: str = "long"
 
+class ReviewIn(BaseModel):
+    category: str
+    evidence: str = Field(min_length=10, max_length=2000)
+    lesson: str = Field(default="", max_length=1000)
+
+class FunnelIn(BaseModel):
+    symbols: list[str] = Field(min_length=1, max_length=20)
+
 class JournalIn(BaseModel):
     symbol: str = Field(min_length=1, max_length=30)
     thesis: str = Field(min_length=1, max_length=2000)
@@ -265,6 +273,33 @@ def create_app(engine: Engine | None = None, api_key: str | None = None) -> Fast
     @app.get("/scoreboard", dependencies=dep)
     def scoreboard() -> dict[str, Any]:
         return eng.scoreboard()
+
+    @app.get("/accountability", dependencies=dep)
+    def accountability():
+        from .accountability import review_report
+        return review_report(eng.scoreboard(), eng.store.verdicts(limit=None), eng.store.get("verdict_reviews", {}))
+
+    @app.post("/verdicts/{verdict_id}/review", dependencies=dep)
+    def review(verdict_id: int, body: ReviewIn):
+        from .accountability import CATEGORIES
+        from datetime import datetime, timezone
+        if body.category not in CATEGORIES:
+            raise HTTPException(400, "Unknown review category")
+        if not any(v["id"]==verdict_id for v in eng.store.verdicts(limit=None)):
+            raise HTTPException(404, "Verdict not found")
+        reviews=eng.store.get("verdict_reviews", {})
+        reviews[str(verdict_id)]={**body.model_dump(), "timestamp":datetime.now(timezone.utc).isoformat(), "status":"reviewer_hypothesis"}
+        eng.store.set("verdict_reviews", reviews)
+        return reviews[str(verdict_id)]
+
+    @app.post("/funnel", dependencies=dep)
+    def funnel(body: FunnelIn):
+        from .funnel import screen
+        allowed=set(eng.watchlist)
+        symbols=list(dict.fromkeys(s.upper().strip() for s in body.symbols))
+        if any(s not in allowed for s in symbols):
+            raise HTTPException(400, "Use only watchlist symbols")
+        return screen(eng.data, symbols)
 
     @app.get("/verdicts", dependencies=dep)
     def verdicts(symbol: str | None = None, limit: int = Query(100, ge=1, le=1000)) -> dict[str, Any]:

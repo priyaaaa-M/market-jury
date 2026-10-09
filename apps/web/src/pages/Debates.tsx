@@ -1,3 +1,4 @@
+import Funnel from "../components/Funnel";
 import { PageIntro, Metric } from "../components/PageIntro";
 import GettingStarted from "../components/GettingStarted";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -28,6 +29,7 @@ export default function Debates() {
       {current && <p role="status" className="mt-3 text-sm">{current.state === "failed" ? current.message : `${current.state.toUpperCase()} · ${current.role?.replaceAll("_"," ")} ${current.attempt ? `· attempt ${current.attempt}/2` : ""}`}</p>}
       <p className="mt-2 text-xs text-neutral-600">Free-only. One bounded retry per role, then stop with no new verdict. No paid fallback. Market-hours gate applies; out-of-hours research can be enabled in Settings.</p>
     </Card>
+    <Funnel symbols={wl.data?.symbols||[]} onSelect={setSym}/>
     <DiscussionStream messages={progress.data?.messages?.[symbol] || []} current={current}/>
     {v.isError && <p className="text-sm text-neutral-600">No completed discussion for {symbol} yet. A failed session never fabricates a verdict.</p>}
     {v.data && <>

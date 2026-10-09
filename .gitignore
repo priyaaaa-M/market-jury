@@ -11,3 +11,5 @@ __pycache__/
 .ruff_cache/
 
 *.tsbuildinfo
+
+apps/web/node_modules
